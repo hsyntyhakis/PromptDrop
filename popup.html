@@ -1,24 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Popup</title>
+  <title>PromptDrop</title>
   <style>
     body {
-      width: 200px;
+      width: 300px;
       font-family: Arial, sans-serif;
       padding: 10px;
-      text-align: center;
     }
-    button {
-      padding: 8px 15px;
+
+    #search-input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .prompt-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .prompt-item {
+      border: 1px solid #eee;
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+
+    .prompt-title {
+      font-weight: bold;
+      cursor: pointer; /* Indicate it's clickable */
+    }
+
+    .prompt-content {
+      margin-top: 5px;
+      display: none; /* Hidden by default */
+      white-space: pre-wrap; /* Preserve formatting */
+    }
+
+    .prompt-tags {
+      font-style: italic;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    .prompt-buttons {
+      margin-top: 5px;
+      text-align: right;
+    }
+
+    .prompt-buttons button {
+      padding: 5px 10px;
+      margin-left: 5px;
       cursor: pointer;
+    }
+
+    .pinned {
+        background-color: lightyellow;
     }
   </style>
 </head>
 <body>
-  <h1>Hello Vivaldi!</h1>
-  <p>This is your first extension.</p>
-  <button id="myButton">Click Me!</button>
+  <h1>PromptDrop</h1>
+  <input type="text" id="search-input" placeholder="Search prompts...">
+  <ul class="prompt-list" id="prompt-list">
+    <!-- Prompts will be dynamically added here -->
+  </ul>
   <script src="popup.js"></script>
 </body>
 </html>
