@@ -400,7 +400,7 @@ function openSavePromptModal(selectedText) {
         padding: 8px 15px;
         border: none;
         border-radius: 6px;
-        background-color: #ff9500;
+        background-color: #129d5e;
         color: white;
         cursor: pointer;
         font-size: 14px;
