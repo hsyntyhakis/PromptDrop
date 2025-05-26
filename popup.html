@@ -22,12 +22,25 @@
       gap: 15px; /* Spacing for direct children like header, search, list */
     }
 
-    h1 { /* Style the main "PromptDrop" title */
+    .popup-header {
+      display: flex;
+      align-items: center; /* Vertically align logo and title */
+      justify-content: center; /* Center the logo and title block */
+      gap: 8px; /* Space between logo and title */
+      margin-bottom: 5px; /* Space below the header block */
+    }
+
+    .popup-header img.logo { /* Style for the logo image */
+      width: 28px;  /* Adjust size as needed */
+      height: 28px; /* Adjust size as needed */
+    }
+
+    .popup-header h1 { /* Style the main "PromptDrop" title */
       font-size: 20px;
       font-weight: 600;
-      color: #ffffff; /* White title */
-      margin: 0 0 5px 0; /* Adjust margins */
-      text-align: center;
+      color: #ffffff;
+      margin: 0; /* Remove default h1 margins */
+      /* text-align: center; Removed, as justify-content on parent handles centering */
     }
 
     #search-input {
@@ -171,9 +184,12 @@
   </style>
 </head>
 <body>
-  <div class="popup-container">  <!-- ** NEW: Wrapper div ** -->
-    <h1>PromptDrop</h1>
-    <input type="text" id="search-input" placeholder="Search titles, content, tags...">
+  <div class="popup-container">
+    <div class="popup-header">
+      <img src="icons/icon32.png" alt="PromptDrop Logo" class="logo">
+      <h1>PromptDrop</h1>
+    </div>
+    <input type="text" id="search-input" placeholder="Search titles, prompts, tags">
     <ul class="prompt-list" id="prompt-list">
       <!-- Prompts will be dynamically added here by popup.js -->
     </ul>

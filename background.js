@@ -132,6 +132,7 @@ function openSavePromptModal(selectedText) {
         color: #f2f2f7;
         box-sizing: border-box; /* Important for padding and width */
         font-size: 14px;
+        font-family: inherit;
     `;
 
 
@@ -157,6 +158,7 @@ function openSavePromptModal(selectedText) {
         box-sizing: border-box;
         font-size: 14px;
         resize: vertical; /* Allow vertical resize */
+        font-family: inherit;
     `;
 
 
@@ -181,6 +183,7 @@ function openSavePromptModal(selectedText) {
         border-radius: 6px;
         background-color: #3a3a3c;
         gap: 5px; /* Gap between pills and input */
+        font-family: inherit;
     `;
 
 
@@ -197,6 +200,7 @@ function openSavePromptModal(selectedText) {
         outline: none; /* Remove default focus outline */
         font-size: 14px;
         min-width: 100px; /* Ensure it has some base width */
+        font-family: inherit;
     `;
 
     // ** NEW: Array to store current tags for this prompt **
