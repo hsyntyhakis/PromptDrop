@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "PromptDrop",
-    "version": "2.1",
+    "version": "2.3",
     "description": "Save and manage your prompts like never before.",
     "permissions": [
       "contextMenus",
@@ -35,6 +35,7 @@
         "icons/pin.png",
         "icons/unpin.png",
         "icons/delete.png",
+        "icons/edit.png",
         "icons/copy.png",
         "icons/copied.png"
       ],

@@ -130,6 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        const editButton = document.createElement('img');
+        editButton.src = 'icons/edit.png'; // Path to your edit icon
+        editButton.alt = 'Edit';
+        editButton.title = 'Edit prompt';
+        // No click listener yet, as per your request
+        // editButton.addEventListener('click', (e) => {
+        //     e.stopPropagation();
+        //     console.log('Edit clicked for prompt ID:', prompt.id); // Placeholder
+        //     // TODO: Implement edit functionality
+        // });
+
         const deleteButton = document.createElement('img');
         deleteButton.src = `icons/delete.png`; // Path to your delete icon
         deleteButton.title = 'Delete'; // Tooltip
@@ -149,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         buttonsElement.appendChild(copyButton);
         buttonsElement.appendChild(pinButton);
+        buttonsElement.appendChild(editButton);
         buttonsElement.appendChild(deleteButton);
 
         const footerRow = document.createElement('div');
