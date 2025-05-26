@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>PromptDrop</title>
   <style>
     body {
@@ -73,16 +74,23 @@
     }
 
     .prompt-item {
-      background-color: #3a3a3c; /* Background for each item */
-      border: 1px solid #505054; /* Subtle border for items */
+      background-color: #3a3a3c;
+      border: 1px solid #505054;
       margin-bottom: 10px;
       padding: 12px;
       border-radius: 8px;
-      /* Removed box-shadow for a flatter look within the dark theme, can add back if preferred */
+      position: relative; /* ** ADDED: Needed for absolute positioning of buttons if you choose that later, good to have ** */
+      transition: background-color 0.2s ease-in-out; /* Smooth hover transition for item background */
     }
-    .prompt-item.pinned { /* Style for pinned items */
-        background-color: #4a4a4e; /* Slightly different background for pinned */
-        border-left: 3px solid #ff9500; /* Orange accent for pinned */
+    .prompt-item:hover {
+        background-color: #3E6E4F; /* Slightly lighter on hover for the item itself */
+    }
+    .prompt-item.pinned {
+        background-color: #4a4a4e;
+        border-left: 3px solid #ff9500;
+    }
+    .prompt-item.pinned:hover {
+        background-color: #3E6E4F; /* Slightly lighter pinned hover */
     }
 
 
@@ -92,6 +100,24 @@
       color: #f2f2f7; /* Ensure title text is light */
       cursor: pointer;
       margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+    }
+
+    .expand-collapse-icon {
+      display: inline-block; /* Or just rely on flex alignment */
+      margin-left: 8px; /* Space between icon and title text */
+      font-size: 0.8em; /* Adjust size of the arrow character */
+      color: #a0a0a5; /* Muted color for the icon, or inherit from .prompt-title */
+      transition: transform 0.2s ease-in-out; /* For potential rotation effect later */
+      /* If you want to ensure it's a fixed width to prevent text jump: */
+      /* width: 1em; */
+      /* text-align: center; */
+    }
+
+    /* ** NEW: Styling for the title text span (optional, mostly for semantic grouping) ** */
+    .prompt-title-text {
+      flex-grow: 1; /* Allow title text to take available space */
     }
 
     .prompt-content {
@@ -107,18 +133,23 @@
       background-color: #2c2c2e; /* Background for expanded content, if different */
       padding: 8px;
       border-radius: 4px;
+      margin-left: 0;
+    }
+
+    .prompt-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
     }
 
     .prompt-tags {
-      font-style: normal; /* Remove italic from the main container if pills are used */
+      font-style: italic;
       font-size: 0.85em;
       color: #a0a0a5;
-      margin-top: 8px;
-      /* Allow pills to wrap */
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px; /* Gap between "Tags:" label and first pill, and between pills */
-      align-items: center;
+      margin-top: 10px;
+      /* ** Optional: if you want tags to not grow and buttons to stay right ** */
+      flex-shrink: 0; /* Prevent tags from shrinking if buttons need space */
     }
     .prompt-tags .tag-pill-display { /* Style for individual tag pills */
         display: inline-block;
@@ -139,10 +170,22 @@
 
     .prompt-buttons {
       margin-top: 10px;
-      text-align: right; /* Align buttons to the right */
-      display: flex; /* Use flex for better alignment and spacing */
+      text-align: right;
+      display: flex;
       justify-content: flex-end;
-      gap: 8px; /* Space between buttons */
+      gap: 8px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+      /* position: absolute; /* Alternative: for positioning top-right */
+      /* top: 10px; */
+      /* right: 10px; */
+    }
+
+    /* ** NEW: Show buttons on .prompt-item hover ** */
+    .prompt-item:hover .prompt-buttons {
+      opacity: 1;
+      visibility: visible;
     }
 
     /* Styling for buttons if they are actual <button> elements */
@@ -156,20 +199,20 @@
       font-size: 13px;
     }
     .prompt-buttons button:hover {
-        background-color: #636366;
+        background-color: #3E6E4F;
     }
 
     /* Styling for icon buttons if they are <img> elements */
     .prompt-buttons img {
-      width: 20px;  /* Adjust default icon size */
-      height: 20px; /* Adjust default icon size */
+      width: 15px;  /* Adjust default icon size */
+      height: 15px; /* Adjust default icon size */
       cursor: pointer;
       padding: 4px; /* Add some padding to make click target larger */
       border-radius: 4px; /* Slight rounding for hover effect */
       vertical-align: middle;
     }
     .prompt-buttons img:hover {
-        background-color: #505054; /* Hover background for icons */
+        background-color: #3E6E4F; /* Hover background for icons */
     }
 
     /* Separator for pinned items */

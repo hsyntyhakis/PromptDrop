@@ -21,16 +21,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const titleElement = document.createElement('div');
-        titleElement.classList.add('prompt-title');
-        titleElement.textContent = prompt.title;
-        titleElement.addEventListener('click', () => {
-            const contentElement = listItem.querySelector('.prompt-content'); // Find content within this item
-            contentElement.style.display = contentElement.style.display === 'none' ? 'block' : 'none';
-        });
+        titleElement.classList.add('prompt-title'); // Keep the class for existing styles
+
+        const expandCollapseIcon = document.createElement('span');
+        expandCollapseIcon.classList.add('expand-collapse-icon');
+        expandCollapseIcon.textContent = '▶'; // Initial state: Expand (right arrow)
+        const titleTextSpan = document.createElement('span');
+        titleTextSpan.classList.add('prompt-title-text');
+        titleTextSpan.textContent = prompt.title;
+
+        titleElement.appendChild(titleTextSpan);
+        titleElement.appendChild(expandCollapseIcon);
 
         const contentElement = document.createElement('div');
         contentElement.classList.add('prompt-content');
         contentElement.textContent = prompt.content;
+
+        titleElement.addEventListener('click', () => {
+            // We need to find the contentElement relative to this titleElement's listItem
+            const parentItem = titleElement.closest('.prompt-item');
+            if (parentItem) {
+                const associatedContent = parentItem.querySelector('.prompt-content');
+                if (associatedContent) {
+                    const isHidden = associatedContent.style.display === 'none' || associatedContent.style.display === '';
+                    if (isHidden) {
+                        associatedContent.style.display = 'block';
+                        expandCollapseIcon.textContent = '▼'; // Change to Collapse (down arrow)
+                    } else {
+                        associatedContent.style.display = 'none';
+                        expandCollapseIcon.textContent = '▶'; // Change to Expand (right arrow)
+                    }
+                }
+            }
+        });
 
         let tagsElementContainer = null; // This will be the 'Tags: ' prefix and pill container
         if (prompt.tags && prompt.tags.length > 0) {
@@ -38,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tagsElementContainer.classList.add('prompt-tags'); // Use existing class for overall styling
 
             const tagsLabelSpan = document.createElement('span');
-            tagsLabelSpan.textContent = 'Tags: ';
+            tagsLabelSpan.textContent = '';
             tagsElementContainer.appendChild(tagsLabelSpan);
 
             prompt.tags.forEach(tagText => {
@@ -128,12 +151,16 @@ document.addEventListener('DOMContentLoaded', () => {
         buttonsElement.appendChild(pinButton);
         buttonsElement.appendChild(deleteButton);
 
+        const footerRow = document.createElement('div');
+        footerRow.classList.add('prompt-footer-row');
+
         listItem.appendChild(titleElement);
         listItem.appendChild(contentElement);
         if (tagsElementContainer) { // ** MODIFIED: Check and append new container **
-            listItem.appendChild(tagsElementContainer);
+            footerRow.appendChild(tagsElementContainer);
         }
-        listItem.appendChild(buttonsElement);
+        footerRow.appendChild(buttonsElement);
+        listItem.appendChild(footerRow);
 
         promptList.appendChild(listItem);
     }
