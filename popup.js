@@ -2,61 +2,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const promptList = document.getElementById('prompt-list');
 
-    let prompts = [];
-    let pinnedPrompts = [];
+    let globalPrompts = [];
+    let globalPinnedPrompts = [];
 
     function loadPrompts() {
         chrome.storage.local.get({prompts: [], pinnedPrompts: []}, (data) => {
-            prompts = data.prompts;
-            pinnedPrompts = data.pinnedPrompts || [];
+            globalPrompts = data.prompts;
+            globalPinnedPrompts = data.pinnedPrompts || [];
             renderPrompts();
         });
     }
 
-    function renderPrompts() {
-        promptList.innerHTML = '';
-
-        const searchTerm = searchInput.value.toLowerCase();
-
-        const filteredPinnedPrompts = pinnedPrompts.filter(prompt =>
-            prompt.title.toLowerCase().includes(searchTerm) ||
-            prompt.content.toLowerCase().includes(searchTerm) ||
-            prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-        );
-
-        try {
-            filteredPinnedPrompts.forEach(prompt => {
-                renderPromptItem(prompt, true, promptList, searchTerm, prompts, pinnedPrompts, loadPrompts);
-            });
-        } catch (error) {
-            console.error("Error rendering pinned prompts:", error);
-        }
-
-        if (filteredPinnedPrompts.length > 0 && (prompts.length - pinnedPrompts.length > 0)) {
-            const separator = document.createElement('li');
-            separator.textContent = '---';
-            separator.style.textAlign = 'center';
-            promptList.appendChild(separator);
-        }
-
-        const filteredPrompts = prompts.filter(prompt =>
-            !pinnedPrompts.includes(prompt) && (
-                prompt.title.toLowerCase().includes(searchTerm) ||
-                prompt.content.toLowerCase().includes(searchTerm) ||
-                prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-            )
-        );
-
-        try {
-            filteredPrompts.forEach(prompt => {
-                renderPromptItem(prompt, false, promptList, searchTerm, prompts, pinnedPrompts, loadPrompts);
-            });
-        } catch (error) {
-            console.error("Error rendering regular prompts:", error);
-        }
-    }
-
-    function renderPromptItem(prompt, isPinned, promptList, searchTerm, prompts, pinnedPrompts, loadPrompts) {
+    function renderPromptItem(prompt, isPinned, promptList, searchInputElement, currentGlobalPrompts, currentGlobalPinnedPrompts, loadPromptsFunction, renderPromptsFunction) {
         const listItem = document.createElement('li');
         listItem.classList.add('prompt-item');
         if (isPinned) {
@@ -75,60 +32,93 @@ document.addEventListener('DOMContentLoaded', () => {
         contentElement.classList.add('prompt-content');
         contentElement.textContent = prompt.content;
 
-        const tagsElement = document.createElement('div');
-        tagsElement.classList.add('prompt-tags');
-        tagsElement.textContent = 'Tags: ' + prompt.tags.join(', ');
+        let tagsElementContainer = null; // This will be the 'Tags: ' prefix and pill container
+        if (prompt.tags && prompt.tags.length > 0) {
+            tagsElementContainer = document.createElement('div');
+            tagsElementContainer.classList.add('prompt-tags'); // Use existing class for overall styling
+
+            const tagsLabelSpan = document.createElement('span');
+            tagsLabelSpan.textContent = 'Tags: ';
+            tagsElementContainer.appendChild(tagsLabelSpan);
+
+            prompt.tags.forEach(tagText => {
+                const tagPill = document.createElement('span');
+                tagPill.textContent = tagText;
+                tagPill.classList.add('tag-pill-display'); // Use class from popup.html CSS
+                tagPill.style.cursor = 'pointer'; // Make it look clickable
+                tagPill.title = `Search for tag: ${tagText}`;
+
+                tagPill.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent click from bubbling to list item or title
+                    searchInputElement.value = tagText; // Set search input value
+                    
+                    // Trigger re-render. Calling renderPromptsFn directly is cleaner.
+                    if (renderPromptsFunction && typeof renderPromptsFunction === 'function') {
+                        renderPromptsFunction();
+                    } else {
+                        // Fallback: simulate input event if direct function call isn't passed
+                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                        searchInputElement.dispatchEvent(inputEvent);
+                    }
+                });
+                tagsElementContainer.appendChild(tagPill);
+            });
+        }
 
         const buttonsElement = document.createElement('div');
         buttonsElement.classList.add('prompt-buttons');
 
-        const copyButton = document.createElement('button');
-        copyButton.textContent = 'Copy';
+        const copyButton = document.createElement('img');
+        copyButton.src = 'icons/copy.png'; // Path to your copy icon relative to popup.html
+                                        // Or use chrome.runtime.getURL('icons/copy.png') if you prefer,
+                                        // but for extension pages, relative paths usually work.
+        copyButton.alt = 'Copy'; // Alt text for accessibility
+        copyButton.title = 'Copy prompt'; // Tooltip
         copyButton.addEventListener('click', () => {
             navigator.clipboard.writeText(prompt.content)
-                .then(() => {
-                    console.log('Prompt copied to clipboard');
-                })
-                .catch(err => {
-                    console.error('Failed to copy prompt: ', err);
-                });
+            .then(() => {
+                // Optional: Provide user feedback (e.g., change icon, show "Copied!")
+                copyButton.src = 'icons/copied.png'; // Example: temporary change to a "copied" checkmark icon
+                setTimeout(() => {
+                    copyButton.src = 'icons/copy.png'; // Change it back
+                }, 1500); // Revert after 1.5 seconds
+                console.log('Prompt copied to clipboard');
+            })
+            .catch(err => {
+                console.error('Failed to copy prompt: ', err);
+                // Optional: Provide error feedback to user
+            });
         });
 
         const pinButton = document.createElement('img');
-        pinButton.src = `icons/pin.svg`; // Path to your pin icon
-        pinButton.style.width = '16px'; // Adjust size as needed
-        pinButton.style.height = '16px';
-        pinButton.style.cursor = 'pointer';
+        pinButton.src = isPinned ? `icons/unpin.png` : `icons/pin.png`; // Path to your pin icon
         pinButton.title = isPinned ? 'Unpin' : 'Pin'; // Tooltip
         pinButton.addEventListener('click', () => {
             if (isPinned) {
-                pinnedPrompts = pinnedPrompts.filter(p => p !== prompt);
-                prompts.push(prompt);
+                globalPinnedPrompts = globalPinnedPrompts.filter(p => p !== prompt);
+                globalPrompts.push(prompt);
             } else {
-                prompts = prompts.filter(p => p !== prompt);
-                pinnedPrompts.push(prompt);
+                globalPrompts = globalPrompts.filter(p => p !== prompt);
+                globalPinnedPrompts.push(prompt);
             }
 
-            chrome.storage.local.set({prompts: prompts, pinnedPrompts: pinnedPrompts}, () => {
+            chrome.storage.local.set({prompts: globalPrompts, pinnedPrompts: globalPinnedPrompts}, () => {
                 loadPrompts();
             });
         });
 
         const deleteButton = document.createElement('img');
         deleteButton.src = `icons/delete.png`; // Path to your delete icon
-        deleteButton.style.width = '16px'; // Adjust size as needed
-        deleteButton.style.height = '16px';
-        deleteButton.style.cursor = 'pointer';
         deleteButton.title = 'Delete'; // Tooltip
         deleteButton.addEventListener('click', () => {
             if (confirm("Are you sure you want to delete this prompt?")) {
                 if (isPinned) {
-                    pinnedPrompts = pinnedPrompts.filter(p => p !== prompt);
+                    globalPinnedPrompts = globalPinnedPrompts.filter(p => p !== prompt);
                 } else {
-                    prompts = prompts.filter(p => p !== prompt);
+                    globalPrompts = globalPrompts.filter(p => p !== prompt);
                 }
 
-                chrome.storage.local.set({prompts: prompts, pinnedPrompts: pinnedPrompts}, () => {
+                chrome.storage.local.set({prompts: globalPrompts, pinnedPrompts: globalPinnedPrompts}, () => {
                     loadPrompts();
                 });
             }
@@ -140,15 +130,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
         listItem.appendChild(titleElement);
         listItem.appendChild(contentElement);
-        listItem.appendChild(tagsElement);
+        if (tagsElementContainer) { // ** MODIFIED: Check and append new container **
+            listItem.appendChild(tagsElementContainer);
+        }
         listItem.appendChild(buttonsElement);
 
         promptList.appendChild(listItem);
     }
 
+    function renderPrompts() {
+        promptList.innerHTML = '';
+
+        const searchTerm = searchInput.value.toLowerCase();
+
+        const filteredPinnedPrompts = globalPinnedPrompts.filter(prompt =>
+            prompt.title.toLowerCase().includes(searchTerm) ||
+            prompt.content.toLowerCase().includes(searchTerm) ||
+            prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        );
+
+        try {
+            filteredPinnedPrompts.forEach(prompt => {
+                renderPromptItem(prompt, true, promptList, searchInput, globalPrompts, globalPinnedPrompts, loadPrompts, renderPrompts);
+            });
+        } catch (error) {
+            console.error("Error rendering pinned prompts:", error);
+        }
+
+        const filteredPrompts = globalPrompts.filter(prompt =>
+            !globalPinnedPrompts.includes(prompt) && (
+                prompt.title.toLowerCase().includes(searchTerm) ||
+                prompt.content.toLowerCase().includes(searchTerm) ||
+                prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+            )
+        );
+
+        
+        if (filteredPinnedPrompts.length > 0 && filteredPrompts.length > 0) { // ** MODIFIED: Check filteredPrompts as well **
+            const separator = document.createElement('li');
+            // ** MODIFIED: Use a class for styling **
+            separator.className = 'pinned-separator'; 
+            separator.textContent = ''; // Or just '---' or keep empty and use CSS border
+            // separator.style.textAlign = 'center'; // Remove inline style, use CSS class
+            promptList.appendChild(separator);
+        }
+
+        try {
+            filteredPrompts.forEach(prompt => {
+                renderPromptItem(prompt, false, promptList, searchInput, globalPrompts, globalPinnedPrompts, loadPrompts, renderPrompts);
+            });
+        } catch (error) {
+            console.error("Error rendering regular prompts:", error);
+        }
+
+        if (filteredPinnedPrompts.length === 0 && filteredPrompts.length === 0) {
+            promptList.innerHTML = '<p>No prompts found.</p>';
+        }
+
+    }
+    
+    searchInput.addEventListener('input', renderPrompts);
     loadPrompts();
 
-    searchInput.addEventListener('input', () => {
-        renderPrompts();
-    });
 });

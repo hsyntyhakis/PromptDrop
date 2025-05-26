@@ -28,10 +28,17 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "web_accessible_resources": [ 
-      {
-        "resources": [ "icons/logo.png" ],
-        "matches": [ "<all_urls>" ]
-      }
-    ]
-  }
+    "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/logo.png",
+        "icons/pin.png",
+        "icons/unpin.png",
+        "icons/delete.png",
+        "icons/copy.png",
+        "icons/copied.png"
+      ],
+      "matches": [ "<all_urls>" ]
+    }
+  ]
+}
