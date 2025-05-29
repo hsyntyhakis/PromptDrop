@@ -253,46 +253,52 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
     `;
 
     let currentPromptTags = [];
-    if (isEditMode && promptToEdit.tags) {
-        currentPromptTags = [...promptToEdit.tags]; // Copy tags
-        // Pills will be created after modal is appended to body
-    }
     
-    function createTagPill(tagText) {
-        if (!tagText || currentPromptTags.includes(tagText.toLowerCase())) { // Prevent empty or duplicate tags
+    createTagPill = (tagText) => {
+        console.log(`createTagPill called with: "${tagText}"`); // DEBUG
+        if (!tagText) {
+            console.log('createTagPill: tagText is empty, returning.'); // DEBUG
+            return;
+        }
+        // Convert to lowercase for checking duplicates and storing
+        const lowerTagText = tagText.toLowerCase();
+
+        if (currentPromptTags.includes(lowerTagText)) {
+            console.log(`createTagPill: tag "${lowerTagText}" already exists in currentPromptTags.`); // DEBUG
             return;
         }
 
         const pill = document.createElement('div');
         pill.classList.add('promptdrop-tag-pill');
-        pill.textContent = tagText;
+        pill.textContent = tagText; // Display original casing
+        // ... (pill styling) ...
         pill.style.cssText = `
-            background-color: #505054; /* Pill background */
-            color: #f2f2f7;
-            padding: 4px 8px;
-            border-radius: 12px; /* Rounded pill */
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            background-color: #505054; color: #f2f2f7; padding: 4px 8px; border-radius: 12px;
+            font-size: 13px; display: flex; align-items: center; gap: 5px;
         `;
 
         const removePillButton = document.createElement('span');
+        // ... (removePillButton setup) ...
         removePillButton.innerHTML = '×';
-        removePillButton.style.cssText = `
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 3px; /* Spacing for the 'x' */
-        `;
+        removePillButton.style.cssText = `cursor: pointer; font-weight: bold; margin-left: 3px;`;
+
         removePillButton.onclick = () => {
             tagsContainer.removeChild(pill);
-            currentPromptTags = currentPromptTags.filter(t => t !== tagText.toLowerCase());
+            currentPromptTags = currentPromptTags.filter(t => t !== lowerTagText); // Compare with lowercase
+            console.log('Tag removed, currentPromptTags:', [...currentPromptTags]); // DEBUG
+            populateTagSuggestions(tagsInput.value);
         };
 
         pill.appendChild(removePillButton);
-        tagsContainer.insertBefore(pill, tagsInput); // Insert pill before the input field
-        currentPromptTags.push(tagText.toLowerCase());
-    }
+
+        if (tagsContainer && tagsInput) { // Ensure parent and sibling exist
+            tagsContainer.insertBefore(pill, tagsInput);
+            currentPromptTags.push(lowerTagText); // Store lowercase
+            console.log(`Pill for "${tagText}" created. currentPromptTags:`, [...currentPromptTags]); // DEBUG
+        } else {
+            console.error('createTagPill: tagsContainer or tagsInput not found in DOM!'); // DEBUG
+        }
+    };
 
     tagsInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ',') {
@@ -592,8 +598,15 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
         document.removeEventListener('keydown', handleEscapeKey);
     });
 
-    if (isEditMode && promptToEdit.tags) {
-        promptToEdit.tags.forEach(tag => createTagPill(tag));
+    if (isEditMode && promptToEdit.tags && promptToEdit.tags.length > 0) {
+        console.log(`Edit Mode: Pre-populating tags for prompt ID ${promptToEdit.id}:`, promptToEdit.tags);
+        promptToEdit.tags.forEach(tag => {
+            console.log(`Edit Mode: Attempting to create pill for tag: "${tag}"`);
+            createTagPill(tag); // This function should add to currentPromptTags and DOM
+        });
+        console.log(`Edit Mode: currentPromptTags after pre-population:`, [...currentPromptTags]); // Log a copy
+    } else if (isEditMode) {
+        console.log(`Edit Mode: Prompt ID ${promptToEdit.id} has no tags to pre-populate.`);
     }
 
     titleInput.focus();
