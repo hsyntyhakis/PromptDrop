@@ -1,47 +1,35 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('Background: Message received:', message);
-    console.log('Background: Sender details:', sender); // Keep this for now, useful for other message types
 
     if (message.action === 'editPrompt') {
-        console.log('Background: EditPrompt action recognized for ID:', message.promptId);
+        
         chrome.storage.local.get({prompts: []}, (data) => {
-            console.log('Background: Prompts from storage:', data.prompts);
+            
             const promptToEdit = data.prompts.find(p => p.id === message.promptId);
-            console.log('Background: Found promptToEdit:', promptToEdit);
-
+            
             if (promptToEdit) {
-                // ** MODIFIED: Directly use chrome.tabs.query to get the active tab **
+                
                 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
                     if (tabs && tabs.length > 0 && tabs[0].id) {
                         const activeTabId = tabs[0].id;
-                        console.log('Background: Injecting script into active tab ID:', activeTabId);
+                        
                         chrome.scripting.executeScript({
                             target: {tabId: activeTabId},
                             function: openSavePromptModal,
                             args: [promptToEdit.content, promptToEdit] // Pass content and full prompt object
                         }, (injectionResults) => {
-                            if (chrome.runtime.lastError) {
-                                console.error('Background: Script injection failed:', chrome.runtime.lastError.message);
-                            } else if (injectionResults && injectionResults.length > 0) {
-                                console.log('Background: Script injected successfully:', injectionResults);
-                            } else {
-                                console.log('Background: Script injection completed, but no results array returned (might be okay).');
-                            }
+                            
                         });
                     } else {
-                        console.error('Background: No active tab found to inject script.');
-                        // Optionally, inform the user through an alert or notification if appropriate,
-                        // though since the popup closes, this might be tricky.
-                        // For now, an error log is sufficient.
+                        
                     }
                 });
             } else {
-                console.error("Background: Prompt not found for editing:", message.promptId);
+                
             }
         });
         return true; // Indicates asynchronous response will be sent (or channel kept open)
     }
-    // Handle other message actions here if you add more later
+    
 });
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -56,7 +44,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "save-to-promptdrop") {
       const selectedText = info.selectionText;
 
-      // Open the save prompt modal (we'll implement this later)
       chrome.scripting.executeScript({
           target: {tabId: tab.id},
           function: openSavePromptModal,
@@ -76,7 +63,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     const modalContainer = document.createElement('div');
     modalContainer.id = 'promptdrop-modal-container';
-    // ... (rest of modalContainer styles) ...
     modalContainer.style.cssText = `
         position: fixed;
         top: 0;
@@ -95,7 +81,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
     // --- Modal Content ---
     const modal = document.createElement('div');
     modal.id = 'promptdrop-modal-content';
-    // ... (rest of modal styles) ...
     modal.style.cssText = `
         background-color: #2c2c2e; /* Dark background */
         color: #f2f2f7; /* Light text */
@@ -112,7 +97,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     // --- Header ---
     const header = document.createElement('div');
-    // ... (header styles) ...
     header.style.cssText = `
         display: flex;
         align-items: center;
@@ -160,13 +144,11 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     // --- Title Field ---
     const titleLabel = document.createElement('label');
-    // ... (titleLabel styles) ...
     titleLabel.textContent = 'TITLE';
     titleLabel.style.cssText = `font-size: 12px; color: #8e8e93; font-weight: 500;`;
 
 
     const titleInput = document.createElement('input');
-    // ... (titleInput styles) ...
     titleInput.type = 'text';
     titleInput.id = 'promptdrop-title-input';
     titleInput.placeholder = 'Enter a title';
@@ -188,13 +170,11 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     // --- Prompt Content Field (Editable) ---
     const contentLabel = document.createElement('label');
-    // ... (contentLabel styles) ...
     contentLabel.textContent = 'PROMPT';
     contentLabel.style.cssText = `font-size: 12px; color: #8e8e93; font-weight: 500; margin-top: 20px;`;
 
 
     const contentTextarea = document.createElement('textarea');
-    // ... (contentTextarea styles) ...
     contentTextarea.id = 'promptdrop-content-textarea';
     contentTextarea.value = isEditMode ? promptToEdit.content : selectedText;
     contentTextarea.rows = 5; // Adjust as needed
@@ -214,7 +194,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     // --- Tags Field ---
     const tagsLabel = document.createElement('label');
-    // ... (tagsLabel styles) ...
     tagsLabel.textContent = 'TAGS';
     tagsLabel.style.cssText = `font-size: 12px; color: #8e8e93; font-weight: 500; margin-top: 20px;`;
 
@@ -237,7 +216,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
 
     const tagsInput = document.createElement('input');
-    // ... (tagsInput styles) ...
     tagsInput.type = 'text';
     tagsInput.id = 'promptdrop-tags-input';
     tagsInput.placeholder = 'Add tags...';
@@ -255,37 +233,32 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
     let currentPromptTags = [];
     
     createTagPill = (tagText) => {
-        console.log(`createTagPill called with: "${tagText}"`); // DEBUG
+
         if (!tagText) {
-            console.log('createTagPill: tagText is empty, returning.'); // DEBUG
             return;
         }
         // Convert to lowercase for checking duplicates and storing
         const lowerTagText = tagText.toLowerCase();
 
         if (currentPromptTags.includes(lowerTagText)) {
-            console.log(`createTagPill: tag "${lowerTagText}" already exists in currentPromptTags.`); // DEBUG
             return;
         }
 
         const pill = document.createElement('div');
         pill.classList.add('promptdrop-tag-pill');
         pill.textContent = tagText; // Display original casing
-        // ... (pill styling) ...
         pill.style.cssText = `
             background-color: #505054; color: #f2f2f7; padding: 4px 8px; border-radius: 12px;
             font-size: 13px; display: flex; align-items: center; gap: 5px;
         `;
 
         const removePillButton = document.createElement('span');
-        // ... (removePillButton setup) ...
         removePillButton.innerHTML = '×';
         removePillButton.style.cssText = `cursor: pointer; font-weight: bold; margin-left: 3px;`;
 
         removePillButton.onclick = () => {
             tagsContainer.removeChild(pill);
             currentPromptTags = currentPromptTags.filter(t => t !== lowerTagText); // Compare with lowercase
-            console.log('Tag removed, currentPromptTags:', [...currentPromptTags]); // DEBUG
 
             if (currentPromptTags.length === 0) {
                 tagsInput.placeholder = 'Add tags...';
@@ -299,14 +272,12 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
         if (tagsContainer && tagsInput) { // Ensure parent and sibling exist
             tagsContainer.insertBefore(pill, tagsInput);
             currentPromptTags.push(lowerTagText); // Store lowercase
-            console.log(`Pill for "${tagText}" created. currentPromptTags:`, [...currentPromptTags]); // DEBUG
 
             if (currentPromptTags.length === 1) { // Or just check > 0 after push
                 tagsInput.placeholder = ''; // Or "Add more tags..."
             }
 
         } else {
-            console.error('createTagPill: tagsContainer or tagsInput not found in DOM!'); // DEBUG
         }
     };
 
@@ -390,7 +361,6 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
     // Add blur event to create tag if input loses focus and has text
     tagsInput.addEventListener('blur', () => {
-        // ** MODIFIED: Delay hiding to allow clicks on suggestions **
         setTimeout(() => {
             // Check if the new focused element is part of our suggestions
             if (!tagSuggestionsDropdown.contains(document.activeElement)) {
@@ -628,16 +598,13 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
                     prompts[index] = { ...prompts[index], ...newPromptData };
                     // Ensure tags are completely replaced (not merged)
                     prompts[index].tags = tagsForPrompt;
-                    console.log('Prompt updated:', prompts[index]);
                 } else {
-                    console.error("Attempted to update a prompt that doesn't exist (ID:", originalPromptId, "). Saving as new.");
                     newPromptData.id = Date.now().toString(); // Assign new ID if pushed as new
                     prompts.push(newPromptData);
                 }
             } else { // ** NEW SAVE MODE: Create a new prompt **
                 newPromptData.id = Date.now().toString(); // Assign new unique ID
                 prompts.push(newPromptData);
-                console.log('New prompt saved:', newPromptData);
             }
 
             // Update the global list of unique tags
@@ -650,13 +617,8 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
 
             chrome.storage.local.set({ prompts: prompts, tags: existingGlobalTags }, function () {
                 if (chrome.runtime.lastError) {
-                    console.error("Error saving prompt:", chrome.runtime.lastError.message);
                     return;
                 }
-                console.log('Prompt saved:', newPrompt);
-                console.log('Global tags updated:', existingGlobalTags);
-                // We might want to trigger a refresh of the main popup list here if it's open
-                // or send a message to it. For now, console log is fine.
             });
         });
     }
@@ -694,14 +656,10 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
     });
 
     if (isEditMode && promptToEdit.tags && promptToEdit.tags.length > 0) {
-        console.log(`Edit Mode: Pre-populating tags for prompt ID ${promptToEdit.id}:`, promptToEdit.tags);
         promptToEdit.tags.forEach(tag => {
-            console.log(`Edit Mode: Attempting to create pill for tag: "${tag}"`);
             createTagPill(tag); // This function should add to currentPromptTags and DOM
         });
-        console.log(`Edit Mode: currentPromptTags after pre-population:`, [...currentPromptTags]); // Log a copy
     } else if (isEditMode) {
-        console.log(`Edit Mode: Prompt ID ${promptToEdit.id} has no tags to pre-populate.`);
     }
 
     titleInput.focus();

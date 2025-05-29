@@ -216,23 +216,45 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (filteredPinnedPrompts.length > 0 && filteredPrompts.length > 0) { // ** MODIFIED: Check filteredPrompts as well **
             const separator = document.createElement('li');
-            // ** MODIFIED: Use a class for styling **
             separator.className = 'pinned-separator'; 
             separator.textContent = ''; // Or just '---' or keep empty and use CSS border
             // separator.style.textAlign = 'center'; // Remove inline style, use CSS class
             promptList.appendChild(separator);
         }
 
-        try {
-            filteredPrompts.forEach(prompt => {
-                renderPromptItem(prompt, false, promptList, searchInput, globalPrompts, globalPinnedPrompts, loadPrompts, renderPrompts);
-            });
-        } catch (error) {
-            console.error("Error rendering regular prompts:", error);
-        }
-
+        filteredPrompts.forEach(prompt => {
+            renderPromptItem(prompt, false, promptList, searchInput, globalPrompts, globalPinnedPrompts, loadPrompts, renderPrompts);
+        });
+        
         if (filteredPinnedPrompts.length === 0 && filteredPrompts.length === 0) {
-            promptList.innerHTML = '<p>No prompts found.</p>';
+            const noPromptsMessage = document.createElement('p');
+            noPromptsMessage.textContent = 'No prompts found.';
+            promptList.appendChild(noPromptsMessage);
+
+            // Only show the external search link if there was an actual search term entered
+            if (searchTerm !== "") {
+                const searchExternalContainer = document.createElement('div');
+                searchExternalContainer.style.textAlign = 'center'; // Center the link
+                searchExternalContainer.style.marginTop = '10px'; // Add some space
+
+                const searchExternalText = document.createElement('span');
+                searchExternalText.textContent = 'Search the ';
+                
+                const searchExternalLink = document.createElement('a');
+                searchExternalLink.textContent = 'Prompt Index';
+                // Encode the search term for use in a URL
+                const encodedSearchTerm = encodeURIComponent(searchTerm);
+                searchExternalLink.href = `https://www.thepromptindex.com/prompt-database.php?search=${encodedSearchTerm}`;
+                searchExternalLink.target = '_blank'; // Open in a new tab
+                searchExternalLink.title = `Search for "${searchTerm}" on The Prompt Index`;
+                // Style the link to fit the dark theme
+                searchExternalLink.style.color = '#0a84ff'; // Prominent link color (iOS blue)
+                searchExternalLink.style.textDecoration = 'underline';
+
+                searchExternalContainer.appendChild(searchExternalText);
+                searchExternalContainer.appendChild(searchExternalLink);
+                promptList.appendChild(searchExternalContainer);
+            }
         }
 
     }
