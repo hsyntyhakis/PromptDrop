@@ -286,6 +286,11 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
             tagsContainer.removeChild(pill);
             currentPromptTags = currentPromptTags.filter(t => t !== lowerTagText); // Compare with lowercase
             console.log('Tag removed, currentPromptTags:', [...currentPromptTags]); // DEBUG
+
+            if (currentPromptTags.length === 0) {
+                tagsInput.placeholder = 'Add tags...';
+            }
+
             populateTagSuggestions(tagsInput.value);
         };
 
@@ -295,23 +300,94 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
             tagsContainer.insertBefore(pill, tagsInput);
             currentPromptTags.push(lowerTagText); // Store lowercase
             console.log(`Pill for "${tagText}" created. currentPromptTags:`, [...currentPromptTags]); // DEBUG
+
+            if (currentPromptTags.length === 1) { // Or just check > 0 after push
+                tagsInput.placeholder = ''; // Or "Add more tags..."
+            }
+
         } else {
             console.error('createTagPill: tagsContainer or tagsInput not found in DOM!'); // DEBUG
         }
     };
 
-    tagsInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ',') {
-            event.preventDefault(); // Prevent default form submission or comma in input
-            const tagText = tagsInput.value.trim();
-            if (tagText) {
-                createTagPill(tagText);
-                tagsInput.value = ''; // Clear the input
+    let selectedSuggestionIndex = -1; // -1 means no suggestion is selected
+
+    function highlightSuggestion(index) {
+        const suggestions = tagSuggestionsDropdown.querySelectorAll('div'); // Get all suggestion items
+        suggestions.forEach((item, i) => {
+            if (i === index) {
+                item.style.backgroundColor = '#505054'; // Highlight color
+                item.classList.add('suggestion-active'); // Add a class for potential further styling
+            } else {
+                item.style.backgroundColor = 'transparent'; // Default background
+                item.classList.remove('suggestion-active');
             }
-        } else if (event.key === "Escape") { // ** NEW: Hide dropdown on Escape **
-            hideTagSuggestions();
+        });
+    }
+
+    tagsInput.addEventListener('keydown', (event) => {
+        const suggestions = tagSuggestionsDropdown.querySelectorAll('div'); // Get current suggestion items
+        const suggestionsVisible = tagSuggestionsDropdown.style.display === 'block' && suggestions.length > 0;
+
+        if (suggestionsVisible) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault(); // Prevent cursor from moving in input
+                selectedSuggestionIndex++;
+                if (selectedSuggestionIndex >= suggestions.length) {
+                    selectedSuggestionIndex = 0; // Wrap around to the top
+                }
+                highlightSuggestion(selectedSuggestionIndex);
+                suggestions[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' }); // Ensure visible
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault(); // Prevent cursor from moving in input
+                selectedSuggestionIndex--;
+                if (selectedSuggestionIndex < 0) {
+                    selectedSuggestionIndex = suggestions.length - 1; // Wrap around to the bottom
+                }
+                highlightSuggestion(selectedSuggestionIndex);
+                suggestions[selectedSuggestionIndex].scrollIntoView({ block: 'nearest' }); // Ensure visible
+            } else if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission or newline
+                if (selectedSuggestionIndex > -1 && suggestions[selectedSuggestionIndex]) {
+                    // If a suggestion is highlighted, use it
+                    const selectedTagText = suggestions[selectedSuggestionIndex].textContent;
+                    createTagPill(selectedTagText);
+                    tagsInput.value = '';
+                    hideTagSuggestions();
+                    selectedSuggestionIndex = -1; // Reset selection
+                    // populateTagSuggestions(''); // Refresh, or let input event handle if needed
+                } else {
+                    // If no suggestion highlighted, but text in input, create pill from input
+                    const tagText = tagsInput.value.trim();
+                    if (tagText) {
+                        createTagPill(tagText);
+                        tagsInput.value = '';
+                        hideTagSuggestions(); // Also hide if Enter creates a tag from input
+                        selectedSuggestionIndex = -1;
+                        // populateTagSuggestions('');
+                    }
+                }
+            } else if (event.key === 'Escape') {
+                hideTagSuggestions();
+                selectedSuggestionIndex = -1; // Reset selection
+            }
+        } else { // Suggestions are NOT visible
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                const tagText = tagsInput.value.trim();
+                if (tagText) {
+                    createTagPill(tagText);
+                    tagsInput.value = '';
+                    // If suggestions were meant to open on comma/enter, call populate here
+                    // populateTagSuggestions(''); 
+                }
+            } else if (event.key === 'Escape') {
+                // If modal is closable by escape and not just suggestions:
+                // This part is handled by the global escape listener if present.
+            }
         }
     });
+
     // Add blur event to create tag if input loses focus and has text
     tagsInput.addEventListener('blur', () => {
         // ** MODIFIED: Delay hiding to allow clicks on suggestions **
@@ -349,6 +425,8 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
         max-height: 150px; /* Limit height and make scrollable */
         overflow-y: auto;
         box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        font-family: inherit; 
+        font-size: 14px;
     `;
 
     let suggestionHideTimeout; // ** NEW: For managing blur hide delay **
@@ -369,33 +447,50 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
             } else if (filteredTags.length === 0 && filterText) {
                 const noMatchItem = document.createElement('div');
                 noMatchItem.textContent = `No matching tags for "${filterText}"`;
-                noMatchItem.style.cssText = `padding: 8px 10px; color: #8e8e93; font-style: italic;`;
+                noMatchItem.style.cssText = `padding: 8px 10px; color: #8e8e93; font-style: italic; font-family: inherit;`;
                 tagSuggestionsDropdown.appendChild(noMatchItem);
             }
 
+            selectedSuggestionIndex = -1; 
+            highlightSuggestion(-1);
 
-            filteredTags.forEach(tag => {
+            filteredTags.forEach((tag, index) => { // Add index parameter
                 const suggestionItem = document.createElement('div');
                 suggestionItem.textContent = tag;
-                suggestionItem.style.cssText = `
-                    padding: 8px 10px;
-                    cursor: pointer;
-                    color: #f2f2f7;
-                `;
-                suggestionItem.onmouseover = () => { suggestionItem.style.backgroundColor = '#505054'; };
-                suggestionItem.onmouseout = () => { suggestionItem.style.backgroundColor = 'transparent'; };
+                suggestionItem.style.cssText = `padding: 8px 10px; cursor: pointer; color: #f2f2f7; font-family: inherit;`;
+                // Set an ID or data-attribute for easier selection if needed, though querySelectorAll('div') is simple enough here
+                // suggestionItem.dataset.index = index; 
+
+                suggestionItem.onmouseover = () => { 
+                    // Optional: Update selectedSuggestionIndex on mouse hover too, and highlight
+                    // selectedSuggestionIndex = index; 
+                    // highlightSuggestion(index);
+                    suggestionItem.style.backgroundColor = '#505054'; // Keep simple hover style
+                };
+                suggestionItem.onmouseout = () => { 
+                    // If not the keyboard selected one, revert
+                    // if (index !== selectedSuggestionIndex) {
+                    //    suggestionItem.style.backgroundColor = 'transparent';
+                    // }
+                    // For simplicity, keyboard highlight overrides mouseout for the active item
+                    if (!suggestionItem.classList.contains('suggestion-active')) {
+                         suggestionItem.style.backgroundColor = 'transparent';
+                    }
+                };
                 
-                suggestionItem.addEventListener('mousedown', (e) => { // Use mousedown to act before blur
-                    e.preventDefault(); // Prevent input from losing focus immediately
+                suggestionItem.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
                     createTagPill(tag);
                     tagsInput.value = '';
                     hideTagSuggestions();
-                    tagsInput.focus(); // Keep focus on the input
+                    selectedSuggestionIndex = -1; // Reset
+                    tagsInput.focus();
                 });
                 tagSuggestionsDropdown.appendChild(suggestionItem);
             });
 
-            if (filteredTags.length > 0 || (filteredTags.length === 0 && filterText)) {
+            //if (filteredTags.length > 0 || (filteredTags.length === 0 && filterText)) {
+            if (tagSuggestionsDropdown.childElementCount > 0) {
                 tagSuggestionsDropdown.style.display = 'block';
             } else {
                 tagSuggestionsDropdown.style.display = 'none';
@@ -413,7 +508,7 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
     
     tagsInput.addEventListener('focus', () => {
         clearTimeout(suggestionHideTimeout); 
-        if (firstFocus) { // ** NEW: Check for first focus **
+        if (firstFocus) { 
             firstFocus = false; // Set flag so it doesn't run again on this modal instance
             return; // Don't populate on the very first programmatic focus
         }
@@ -425,7 +520,7 @@ function openSavePromptModal(selectedText, promptToEdit = null) {
         populateTagSuggestions(tagsInput.value);
     });
     
-    tagsOuterContainer.appendChild(tagSuggestionsDropdown); // ** NEW: Add dropdown to its container **
+    tagsOuterContainer.appendChild(tagSuggestionsDropdown); 
 
     // --- Footer ---
     const footer = document.createElement('div');
