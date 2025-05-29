@@ -134,12 +134,21 @@ document.addEventListener('DOMContentLoaded', () => {
         editButton.src = 'icons/edit.png'; // Path to your edit icon
         editButton.alt = 'Edit';
         editButton.title = 'Edit prompt';
-        // No click listener yet, as per your request
-        // editButton.addEventListener('click', (e) => {
-        //     e.stopPropagation();
-        //     console.log('Edit clicked for prompt ID:', prompt.id); // Placeholder
-        //     // TODO: Implement edit functionality
-        // });
+
+        const currentPromptIdForEdit = prompt.id;
+        const currentPromptTitleForEdit = prompt.title;
+
+        editButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent title click event from firing
+    
+            // Send message to background script to open edit modal
+            chrome.runtime.sendMessage({
+                action: 'editPrompt',
+                promptId: currentPromptIdForEdit // Pass the unique ID of the prompt to edit
+            });
+    
+            window.close(); // Close the popup after sending the edit request
+        });
 
         const deleteButton = document.createElement('img');
         deleteButton.src = `icons/delete.png`; // Path to your delete icon
