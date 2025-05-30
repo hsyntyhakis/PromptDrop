@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const promptList = document.getElementById('prompt-list');
-
+    
     let globalPrompts = [];
     let globalPinnedPrompts = [];
 
@@ -100,16 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         copyButton.addEventListener('click', () => {
             navigator.clipboard.writeText(prompt.content)
             .then(() => {
-                // Optional: Provide user feedback (e.g., change icon, show "Copied!")
-                copyButton.src = 'icons/copied.png'; // Example: temporary change to a "copied" checkmark icon
+                copyButton.src = 'icons/copied.png'; 
                 setTimeout(() => {
-                    copyButton.src = 'icons/copy.png'; // Change it back
+                    copyButton.src = 'icons/copy.png';
                 }, 1500); // Revert after 1.5 seconds
-                console.log('Prompt copied to clipboard');
             })
             .catch(err => {
                 console.error('Failed to copy prompt: ', err);
-                // Optional: Provide error feedback to user
             });
         });
 
@@ -153,17 +150,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteButton = document.createElement('img');
         deleteButton.src = `icons/delete.png`; // Path to your delete icon
         deleteButton.title = 'Delete'; // Tooltip
-        deleteButton.addEventListener('click', () => {
-            if (confirm("Are you sure you want to delete this prompt?")) {
-                if (isPinned) {
-                    globalPinnedPrompts = globalPinnedPrompts.filter(p => p !== prompt);
-                } else {
-                    globalPrompts = globalPrompts.filter(p => p !== prompt);
+        deleteButton.addEventListener('click', async () => {
+            try {
+                const confirmed = await showConfirmDialog("Are you sure you want to delete this prompt?");
+                if (confirmed) {
+                    if (!prompt || !prompt.id) {
+                        alert("Error: This prompt cannot be deleted (missing ID).");
+                        return;
+                    }
+                    if (isPinned) {
+                        globalPinnedPrompts = globalPinnedPrompts.filter(p => p.id !== prompt.id);
+                    } else {
+                        globalPrompts = globalPrompts.filter(p => p.id !== prompt.id);
+                    }
+        
+                    chrome.storage.local.set({prompts: globalPrompts, pinnedPrompts: globalPinnedPrompts}, () => {
+                        loadPrompts();
+                    });
                 }
-
-                chrome.storage.local.set({prompts: globalPrompts, pinnedPrompts: globalPinnedPrompts}, () => {
-                    loadPrompts();
-                });
+            } catch (err) {
+                alert("An error occurred while deleting the prompt.");
             }
         });
 
@@ -177,13 +183,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         listItem.appendChild(titleElement);
         listItem.appendChild(contentElement);
-        if (tagsElementContainer) { // ** MODIFIED: Check and append new container **
+        if (tagsElementContainer) { 
             footerRow.appendChild(tagsElementContainer);
         }
         footerRow.appendChild(buttonsElement);
         listItem.appendChild(footerRow);
 
         promptList.appendChild(listItem);
+    }
+
+    function showConfirmDialog(message) {
+        return new Promise((resolve) => {
+            const dialog = document.getElementById('confirm-dialog');
+            const msg = document.getElementById('confirm-dialog-message');
+            msg.textContent = message;
+    
+            dialog.returnValue = ''; // Reset
+            dialog.showModal();
+    
+            dialog.addEventListener('close', function handler() {
+                dialog.removeEventListener('close', handler);
+                resolve(dialog.returnValue === 'yes');
+            });
+        });
     }
 
     function renderPrompts() {
@@ -261,5 +283,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     searchInput.addEventListener('input', renderPrompts);
     loadPrompts();
-
 });
