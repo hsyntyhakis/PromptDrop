@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "PromptDrop",
     "version": "2.6",
-    "description": "Save and manage your prompts like never before.",
+    "description": "Simple but powerful prompt management.",
     "permissions": [
       "contextMenus",
       "activeTab",
